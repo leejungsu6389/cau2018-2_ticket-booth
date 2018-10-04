@@ -1,4 +1,5 @@
 #include <iostream>
+#include <random>
 #include <opencv2/opencv.hpp>
 #ifdef _DEBUG
 #pragma comment(lib, "opencv_world343d.lib")
@@ -7,44 +8,35 @@
 #endif
 using namespace std;
 using namespace cv;
-void processVideo(char* video_name) {
-	VideoCapture capture(video_name);
-	Ptr<BackgroundSubtractor> pKNN;
-	Ptr<BackgroundSubtractor> pMOG2;
-	Mat fgMaskMOG2;
-	Mat fgMaskKNN;
-	Mat frame;
-	double start;
-	double end_time;
-	pKNN = createBackgroundSubtractorKNN(500,400,true);
-	pMOG2 = createBackgroundSubtractorMOG2(500,400,true);
-	while(!capture.isOpened()) {
-		std::cout<<"error"<<std::endl;
-		exit(EXIT_FAILURE);
-	}
-	int count = 0;
-	int flag = 0;
-	start = clock();
-	
-	while(1) {
-		if(!capture.read(frame)) {
-			std::cout<<"file end"<<std::endl;
-			break;
-		}
-		pKNN->apply(frame,fgMaskKNN);
-		pMOG2->apply(frame,fgMaskMOG2);
-		imshow("KNN",fgMaskKNN);
-		imshow("MOG2",fgMaskMOG2);
-		if(count>100 && flag == 0) {
-			flag = 1;
-			double end = clock();
-		}
-		waitKey(100);
-		count++;
-	}
+void Erosion(Mat input,Mat output,int erosion_size, int erosion_type) {
+	/*erosion_type = MORPH_RECT, MORPH_CROSS,MORPH_ELLIPSE*/
+	Mat element = getStructuringElement(erosion_type,Size(2*erosion_size+1,2*erosion_size+1),Point(erosion_size,erosion_size));
+	erode(input,output,element);
+}
+void Dilation(Mat input,Mat output,int erosion_size,int erosion_type) {
+	/*erosion_type = MORPH_RECT, MORPH_CROSS,MORPH_ELLIPSE*/
+	Mat element = getStructuringElement(erosion_type,Size(2*erosion_size+1,2*erosion_size+1),Point(erosion_size,erosion_size));
+	dilate(input,output,element);
 }
 int main() {
-	char f_name[] = "People.mp4";
-	processVideo(f_name);
+	Mat capture;
+	Ptr<BackgroundSubtractor> pKNN;
+	pKNN = createBackgroundSubtractorKNN(500,400,true);
+	VideoCapture stream("People.mp4");
+	while(1) {
+		if(!stream.read(capture)) {
+			break;
+		}
+		imshow("video",capture);
+		Erosion(capture,capture,3,MORPH_CROSS);
+		Dilation(capture,capture,3,MORPH_CROSS);
+		Dilation(capture,capture,3,MORPH_ELLIPSE);
+		Erosion(capture,capture,3,MORPH_ELLIPSE);
+		Dilation(capture,capture,3,MORPH_ELLIPSE);
+		Erosion(capture,capture,3,MORPH_RECT);
+		pKNN->apply(capture,capture);
+		imshow("test",capture);
+		waitKey(100);
+	}
 	return 0;
 }
