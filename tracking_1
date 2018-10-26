@@ -1,0 +1,149 @@
+import numpy as np
+import cv2
+import math
+DISTANCE = 150.0
+DEADLINE = 20
+cap = cv2.VideoCapture("C:\\Users\\kimin\\OneDrive\\바탕 화면\\sample.mp4")  # Open video file
+print("(", cap.get(3), cap.get(4), ")")
+bgSub = cv2.createBackgroundSubtractorKNN(dist2Threshold=400,detectShadows=False)
+mid_x = int(cap.get(3)/2)
+mid_y = int(cap.get(4)/2)
+frame_sz = (500,300)
+kernelOp = np.ones((3,3),np.uint8)
+kernelCl = np.ones((11,11),np.uint8)
+count = 0
+cv2.namedWindow("Demo",0)
+indoor_start = [[],[],[],[]]
+indoor_start_timer = [0,0,0,0]
+outdoor_start = [[],[],[],[]]
+outdoor_start_timer = [0,0,0,0]
+while (cap.isOpened()):
+    (ret, frame) = cap.read()  # read a frame
+    try:
+        count = count + 1
+        for i in range(0, 4):
+            if indoor_start_timer[i] > DEADLINE:
+                print(i ," is deleted")
+                indoor_start[i].clear()
+                indoor_start_timer[i] = 0
+            if outdoor_start_timer[i] > DEADLINE:
+                outdoor_start[i].clear()
+                outdoor_start_timer[i] = 0
+        frame = cv2.resize(frame, frame_sz)
+        original = frame
+        frame = cv2.cvtColor(frame,cv2.COLOR_RGB2GRAY)
+        frame = cv2.GaussianBlur(frame,(3,3),0)
+        frame = cv2.morphologyEx(frame, cv2.MORPH_OPEN, kernelOp)
+        frame = cv2.morphologyEx(frame, cv2.MORPH_CLOSE, kernelCl)
+        frame = bgSub.apply(frame)
+        cv2.threshold(frame,200,255,cv2.THRESH_BINARY)
+        frame = cv2.morphologyEx(frame,cv2.MORPH_OPEN,kernelOp)
+        frame = cv2.morphologyEx(frame, cv2.MORPH_OPEN, kernelOp)
+        frame = cv2.morphologyEx(frame, cv2.MORPH_CLOSE, kernelCl)
+        frame = cv2.morphologyEx(frame, cv2.MORPH_CLOSE, kernelCl)
+        _, contours, hierarchy = cv2.findContours(frame,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+        indoor_isUpd = [False, False, False, False]
+        outdoor_isUpd = [False, False, False, False]
+
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area>10000:
+                M = cv2.moments(cnt)
+                cx = int(M['m10'] / M['m00'])
+                cy = int(M['m01'] / M['m00'])
+                x, y, w, h = cv2.boundingRect(cnt)
+                cv2.circle(original, (cx, cy), 3, (0, 0, 255), -1)
+                cv2.rectangle(original, (x, y), (x + w, y + h),(0,255,2),2)
+                if cx < 400 : #안에서 탐색
+                    checked = False
+                    for i in range(0,4):
+                        if len(indoor_start[i]) != 0:
+                            check = indoor_start[i].pop()
+                            indoor_start[i].append(check)
+                            dist = math.sqrt((cx - check[0])*(cx - check[0]) + (cy - check[1])*(cy - check[1]))
+                            if dist < DISTANCE:
+                                print(i ," is used");
+                                ignore = True
+                                indoor_start[i].append((cx,cy))
+                                indoor_start_timer[i] = 0
+                                indoor_isUpd[i] = True
+                                checked = True
+                                break
+                        if len(outdoor_start[i]) != 0 & checked == False:
+                            check = outdoor_start[i].pop()
+                            outdoor_start[i].append(check)
+                            dist = math.sqrt((cx - check[0]) * (cx - check[0]) + (cy - check[1]) * (cy - check[1]))
+                            if dist < DISTANCE:
+                                outdoor_start[i].append((cx,cy))
+                                outdoor_start_timer[i] = 0
+                                outdoor_isUpd[i] = True
+                                break
+                    if checked == False :
+                        for j in range(0,4) :
+                            if len(indoor_start[j]) == 0:
+                                indoor_start[j].append((cx,cy))
+                                indoor_start_timer[i] = 0
+                                indoor_isUpd[i] = True
+                                break
+
+
+                else :
+                    checked = False
+                    for i in range(0, 4):
+                        ignore = False
+                        if len(outdoor_start[i]) != 0:
+                            check = outdoor_start[i].pop()
+                            outdoor_start[i].append(check)
+                            dist = math.sqrt((cx - check[0]) * (cx - check[0]) + (cy - check[1]) * (cy - check[1]))
+                            if dist < DISTANCE:
+                                outdoor_start[i].append((cx,cy))
+                                outdoor_start_timer[i] = 0
+                                checked = True
+                                outdoor_isUpd[i] = True
+                                break
+                        if len(indoor_start[i]) != 0 & checked == False :
+                            check = indoor_start[i].pop()
+                            indoor_start[i].append(check)
+                            dist = math.sqrt((cx - check[0]) * (cx - check[0]) + (cy - check[1]) * (cy - check[1]))
+                            if dist < DISTANCE:
+                                indoor_start[i].append((cx,cy))
+                                indoor_start_timer[i] = 0
+                                checked = True
+                                outdoor_isUpd[i] = True
+                                break
+
+                    if checked == False:
+                        for j in range(0, 4):
+                            if len(outdoor_start[j]) == 0:
+                                outdoor_start[j].append((cx,cy))
+                                outdoor_start_timer[i] = 0
+                                outdoor_isUpd[i] = True
+                                break
+
+
+        for i in range(0,4):
+            if len(indoor_start[i]) > 1:
+                for j in range(0,len(indoor_start[i])-1) :
+                    original = cv2.line(original, indoor_start[i][j], indoor_start[i][j+1], (0, 0, 255), 3)
+            if len(outdoor_start[i]) > 1:
+                for j in range(0,len(outdoor_start[i])-1) :
+                    original = cv2.line(original, outdoor_start[i][j], outdoor_start[i][j+1], (255, 0, 0), 5)
+        original = cv2.line(original,(400,0),(400,300),(255,0,0),2)
+        original = cv2.putText(original,"IN",(350,250),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2)
+        original = cv2.putText(original, "OUT", (420, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.imshow("Demo", original)
+        for i in range(0, 4):
+            if indoor_isUpd[i] == False:
+                indoor_start_timer[i] = indoor_start_timer[i] +1
+        for i in range(0, 4):
+            if outdoor_isUpd[i] == False:
+                outdoor_start_timer[i] = outdoor_start_timer[i] +1
+    except:
+        print("EOF")
+        break
+    k = cv2.waitKey(30)
+    if k > 0:
+        a = int(input("1누르면 재진행"))
+        continue
+cap.release()
+cv2.destroyAllWindows()
