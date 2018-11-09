@@ -81,45 +81,14 @@
 				<p>:</p>
 			</div>
 
-
-<?php
-require_once("db_connect.php");
-
-/* ======================= */
-
-/* STEP 2 get current count */
-$sql = "SELECT *
-FROM people";
-
-/* prepare */
-$stmt = $s->prepare($sql);
-
-/* execute */
-$stmt->execute();
-
-/* get result */
-$result = $stmt->get_result();
-
-while($row = $result->fetch_assoc()){
-$current_n[] = $row['num'];
-}
-
-$stmt->close();
-
-
-        echo'
-
 			<!-- number -->
 			<div class="numbers">
-				<p class="num">'.$current_n[0].'</p>
+				<p class="seconds"></p>
 				<p class="placeholder">88</p>
 			</div>
 
-		';
 
-?>
 
-			
 			<!-- AM / PM -->
 			<div class="am-pm">
 
@@ -141,7 +110,9 @@ $stmt->close();
 
 
 	<!-- CUSTOM JAVASCRIPT STYLESHEET -->
-	<script src="javascript/main.js"></script>
+	<script src="javascript/main.php"></script>
+
+    <script>setTimeout("location.reload()",5000)</script>
 
 </body>
 
