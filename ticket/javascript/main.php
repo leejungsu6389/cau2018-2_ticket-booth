@@ -1,11 +1,9 @@
 //invokes functions as soon as window loads
 window.onload = function(){
 	time();
-	ampm();
 	whatDay();
 	setInterval(function(){
 		time();
-		ampm();
 		whatDay();
 	}, 1000);
 };
@@ -69,7 +67,7 @@ var test = '<?php echo $result; ?>';
 	//invokes function to make sure number has at least two digits
 	hours = addZero(hours);
 	minutes = addZero(minutes);
-	seconds = addZero(test);
+	seconds = addZero(seconds);
 
 	//changes the html to match results
 	document.getElementsByClassName('hours')[0].innerHTML = hours;
@@ -83,17 +81,6 @@ function addZero (val){
 	return (val <= 9) ? ("0" + val) : val;
 }
 
-//lights up either am or pm on clock
-function ampm(){
-	var date = new Date(),
-		hours = date.getHours(),
-		am = document.getElementsByClassName("am")[0].classList,
-		pm = document.getElementsByClassName("pm")[0].classList;
-
-
-	(hours >= 12) ? pm.add("light-on") : am.add("light-on");
-	(hours >= 12) ? am.remove("light-on") : pm.remove("light-on");
-}
 
 //lights up what day of the week it is
 function whatDay(){

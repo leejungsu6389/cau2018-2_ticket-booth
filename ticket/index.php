@@ -89,21 +89,12 @@
 
 
 
-			<!-- AM / PM -->
-			<div class="am-pm">
-
-				<!-- AM -->
-				<div>
-					<p class="am">am</p>
-				</div>
-
-				<!-- PM -->
-				<div>
-					<p class="pm">pm</p>
-				</div>
-			</div>
-
 		</div><!-- END CLOCK -->
+
+		<!-- NUMBER -->
+		<div>
+		    <p class="test">1234</p>
+		</div>
 
 	</main>
 
