@@ -80,7 +80,7 @@
             $stmt = $s->prepare($sql);
 
             /* bind */
-            $stmt->bind_param("sis", $bn, $bt, $bid);
+            $stmt->bind_param("iss", $bn, $bt, $bid);
 
             /* set parameters */
 
@@ -107,6 +107,99 @@
 
             /* close statement */
             $stmt->close();
+
+
+
+
+
+
+
+
+
+
+            /* STEP4 LOG */
+            $sql = "SELECT *
+                    FROM _records
+                    ORDER BY _od ASC";
+
+            /* prepare */
+            $stmt = $s->prepare($sql);
+
+            /* execute */
+            $stmt->execute();
+
+            /* get result */
+            $result = $stmt->get_result();
+
+            while($row = $result->fetch_assoc()){
+
+                $od[] = $row['_od'];
+                $t[] = $row['t'];
+                $io[] = $row['io'];
+
+            }
+
+            echo "od ".$od[0];
+            echo "<br/>";
+
+
+            echo "t ".$t[0];
+            echo "<br/>";
+
+
+            echo "io ".$io[0];
+            echo "<br/>";
+
+
+            $nn = count($od);
+
+            echo "count ".$nn;
+            echo "<br/>";
+
+            for($i=0; $i < $nn; $i++){
+
+                echo $od[$i]." : ".$t[$i]." : ".$io[$i];
+                echo "<br/>";
+
+            }
+
+
+            /* close statement */
+            $stmt->close();
+
+
+
+
+
+            $sql = "INSERT INTO _records(_od, t, io)
+                    VALUES(?, ?, ?)";
+
+            /* prepare */
+            $stmt = $s->prepare($sql);
+
+            /* bind */
+            $stmt->bind_param("iss", $bod, $btt, $bio);
+
+
+
+            /* time에 현재 문제 있음 수정요망 */
+            $tt = date('Y-m-d H:i:s', time());
+
+            /* set parameters */
+
+            /* ascend */
+            $bod = $nn + 1;
+            $btt = $tt;
+            $bio = "OUT";
+
+
+            /* execute */
+            $stmt->execute();
+
+
+            /* close statement */
+            $stmt->close();
+
 
             /* disconnect db */
             mysqli_close($s);
